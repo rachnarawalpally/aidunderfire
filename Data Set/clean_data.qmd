@@ -1,0 +1,225 @@
+
+
+
+```{python}
+import pandas as pd 
+
+df = pd.read_csv("DataSet/security_incidents.csv")
+
+df.head()
+```
+
+```{python}
+import matplotlib.pyplot as plt
+
+# Grouping the data by Year and summing the 'Total killed' column to get total deaths per year
+annual_deaths = df.groupby('Year')['Total killed'].sum().reset_index()
+
+# Plotting the trend of total deaths per year
+plt.plot(annual_deaths['Year'], annual_deaths['Total killed'], marker='o', linestyle='-', color='blue')
+plt.title('Total Humanitarian Aid Worker Deaths Per Year (1997 - 2025)')
+plt.xlabel('Year')
+plt.ylabel('Total Deaths')
+plt.show()
+```
+
+```{python}
+# Group by country and sum the 'Total killed' column
+grouped_by_country = df.groupby("Country")["Total killed"].sum().sort_values(ascending=False)
+grouped_by_country.head(10)
+```
+
+```{python}
+import folium
+# Filter only incidents with valid lat/lon and Total killed > 0
+df = df.dropna(subset=["Latitude", "Longitude"])
+# Create a base map centered around the average location
+map_center = [df["Latitude"].mean(), df["Longitude"].mean()]
+aid_map = folium.Map(location=map_center, zoom_start=2)
+
+# Add a marker for each incident where someone was killed
+for _, row in df[df["Total killed"] > 0].iterrows():
+    folium.CircleMarker(
+        location=[row["Latitude"], row["Longitude"]],
+        radius=row["Total killed"],  # Make size proportional to number killed
+        popup=f"{row['Country']}: {int(row['Total killed'])} killed",
+        color='red',
+        fill=True,
+        fill_color='red'
+    ).add_to(aid_map)
+
+# Save or display the map
+aid_map.save("aid_worker_deaths_map.html")
+
+```
+
+## Aid Worker Deaths Map
+
+<iframe src="aid_worker_deaths_map.html" width="100%" height="600" style="border:none;"></iframe>
+
+```{python}
+# Create a table of Means of attack and their counts
+attack_counts_table = df["Means of attack"].value_counts().reset_index()
+attack_counts_table.columns = ["Means of Attack", "Number of Incidents"]
+# Display the table using standard pandas
+attack_counts_table.head(10)
+```
+
+```{python}
+import matplotlib.pyplot as plt
+
+# Focus years
+focus_years = [1994, 2003, 2005, 2014, 2016, 2024]
+
+# Filter data for focus years
+filtered_df = df[df["Year"].isin(focus_years)]
+
+# Aggregate total deaths per year
+deaths_by_year = filtered_df.groupby("Year")["Total killed"].sum().reset_index()
+
+# Plotting
+plt.figure(figsize=(10, 6))
+plt.bar(deaths_by_year["Year"].astype(str), deaths_by_year["Total killed"])
+plt.xlabel("Year")
+plt.ylabel("Total Aid Worker Deaths")
+plt.title("Total Aid Worker Deaths in Focus Years")
+plt.grid(axis='y', linestyle='--', alpha=0.7)
+plt.tight_layout()
+plt.show()
+```
+
+```{python}
+# Filter data from 1998 to 2008 for comparison around UNSC Resolution 1502 in 2003
+window_df = df[(df["Year"] >= 1998) & (df["Year"] <= 2008)]
+
+# Aggregate total deaths per year
+deaths_window = window_df.groupby("Year")["Total killed"].sum().reset_index()
+
+# Add a column indicating whether the year is before or after the legislation (2003)
+deaths_window["Period"] = deaths_window["Year"].apply(lambda x: "Before" if x < 2003 else "After")
+
+# Calculate average deaths before and after
+avg_deaths = deaths_window.groupby("Period")["Total killed"].mean().reset_index().rename(columns={"Total killed": "Average Deaths"})
+
+# T-test to check statistical significance
+from scipy.stats import ttest_ind
+
+before_deaths = deaths_window[deaths_window["Period"] == "Before"]["Total killed"]
+after_deaths = deaths_window[deaths_window["Period"] == "After"]["Total killed"]
+t_stat, p_value = ttest_ind(before_deaths, after_deaths, equal_var=False)
+
+avg_deaths, t_stat, p_value
+```
+
+```{python}
+# Plotting the trend from 1998 to 2008 with a marker for 2003 legislation
+plt.figure(figsize=(10, 6))
+plt.plot(deaths_window["Year"], deaths_window["Total killed"], marker='o', linestyle='-')
+plt.axvline(x=2003, color='red', linestyle='--', label='UNSC Resolution 1502 (2003)')
+plt.title("Aid Worker Deaths (1998–2008) with 2003 Legislation Marker")
+plt.xlabel("Year")
+plt.ylabel("Total Aid Worker Deaths")
+plt.legend()
+plt.grid(True, linestyle='--', alpha=0.6)
+plt.tight_layout()
+plt.show()
+
+```
+
+```{python}
+# Filter data from 2009 to 2019 for comparison around UNSC Resolution 1502 in 2014
+window_df = df[(df["Year"] >= 2009) & (df["Year"] <= 2019)]
+
+# Aggregate total deaths per year
+deaths_window = window_df.groupby("Year")["Total killed"].sum().reset_index()
+
+# Add a column indicating whether the year is before or after the legislation (2003)
+deaths_window["Period"] = deaths_window["Year"].apply(lambda x: "Before" if x < 2014 else "After")
+
+# Calculate average deaths before and after
+avg_deaths = deaths_window.groupby("Period")["Total killed"].mean().reset_index().rename(columns={"Total killed": "Average Deaths"})
+
+# T-test to check statistical significance
+from scipy.stats import ttest_ind
+
+before_deaths = deaths_window[deaths_window["Period"] == "Before"]["Total killed"]
+after_deaths = deaths_window[deaths_window["Period"] == "After"]["Total killed"]
+t_stat, p_value = ttest_ind(before_deaths, after_deaths, equal_var=False)
+
+avg_deaths, t_stat, p_value
+```
+
+```{python}
+# Filter data from 2011 to 2021 for comparison around UNSC Resolution 1502 in 2016
+window_df = df[(df["Year"] >= 2011) & (df["Year"] <= 2021)]
+
+# Aggregate total deaths per year
+deaths_window = window_df.groupby("Year")["Total killed"].sum().reset_index()
+
+# Add a column indicating whether the year is before or after the legislation (2003)
+deaths_window["Period"] = deaths_window["Year"].apply(lambda x: "Before" if x < 2016 else "After")
+
+# Calculate average deaths before and after
+avg_deaths = deaths_window.groupby("Period")["Total killed"].mean().reset_index().rename(columns={"Total killed": "Average Deaths"})
+
+# T-test to check statistical significance
+from scipy.stats import ttest_ind
+
+before_deaths = deaths_window[deaths_window["Period"] == "Before"]["Total killed"]
+after_deaths = deaths_window[deaths_window["Period"] == "After"]["Total killed"]
+t_stat, p_value = ttest_ind(before_deaths, after_deaths, equal_var=False)
+
+avg_deaths, t_stat, p_value
+```
+
+```{python}
+# Filter data for 2003–2008
+post_2003_df = df[(df["Year"] >= 2003) & (df["Year"] <= 2008)]
+
+# Sum incidents by organization type
+org_columns = ["UN", "INGO", "ICRC", "NRCS and IFRC", "NNGO", "Other"]
+org_totals = post_2003_df[org_columns].sum().sort_values(ascending=False).reset_index()
+org_totals.columns = ["Organization Type", "Number of Incidents"]
+# Filter data for 1998–2002 (pre-legislation period)
+pre_2003_df = df[(df["Year"] >= 1998) & (df["Year"] < 2003)]
+
+# Sum incidents by organization type for pre-legislation period
+pre_org_totals = pre_2003_df[org_columns].sum().sort_values(ascending=False).reset_index()
+pre_org_totals.columns = ["Organization Type", "Number of Incidents"]
+
+# Combine with post-legislation for comparison
+comparison_df = pd.merge(pre_org_totals, org_totals, on="Organization Type", suffixes=("_Pre2003", "_Post2003"))
+
+# Plot side-by-side bars
+x = range(len(comparison_df))
+plt.figure(figsize=(12, 6))
+plt.bar([i - 0.2 for i in x], comparison_df["Number of Incidents_Pre2003"], width=0.4, label="1998–2002")
+plt.bar([i + 0.2 for i in x], comparison_df["Number of Incidents_Post2003"], width=0.4, label="2003–2008")
+plt.xticks(x, comparison_df["Organization Type"])
+plt.ylabel("Number of Incidents")
+plt.title("Comparison of Incidents by Organization Type (Pre vs Post 2003)")
+plt.legend()
+plt.grid(axis='y', linestyle='--', alpha=0.6)
+plt.tight_layout()
+plt.show()
+```
+
+```{python}
+# Filter data for years after 2016 (inclusive)
+post_2016_df = df[df["Year"] >= 2016]
+
+# Group by country and sum total killed
+post_2016_country_deaths = post_2016_df.groupby("Country")["Total killed"].sum().sort_values(ascending=False).reset_index()
+top_post_2016_countries = post_2016_country_deaths.head(10)
+
+# Plot top 10 countries
+plt.figure(figsize=(12, 6))
+plt.bar(top_post_2016_countries["Country"], top_post_2016_countries["Total killed"])
+plt.title("Top 10 Countries by Aid Worker Deaths (2016–2024)")
+plt.xlabel("Country")
+plt.ylabel("Total Aid Worker Deaths")
+plt.xticks(rotation=45, ha="right")
+plt.grid(axis='y', linestyle='--', alpha=0.6)
+plt.tight_layout()
+plt.show()
+```
